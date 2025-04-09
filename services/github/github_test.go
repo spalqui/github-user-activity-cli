@@ -46,6 +46,22 @@ func TestGetUserEvents(t *testing.T) {
 			expectedEvents: nil,
 			wantErr:        true,
 		},
+		{
+			name:           "internal server error",
+			username:       "testuser",
+			mockResponse:   `{"message":"Internal Server Error"}`,
+			mockStatusCode: 500,
+			expectedEvents: nil,
+			wantErr:        true,
+		},
+		{
+			name:           "invalid json response",
+			username:       "testuser",
+			mockResponse:   `{"invalid_json":`,
+			mockStatusCode: 200,
+			expectedEvents: nil,
+			wantErr:        true,
+		},
 	}
 
 	for _, tt := range tests {
