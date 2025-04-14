@@ -3,9 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
-	"net/http"
 	"os"
-	"time"
 
 	"github.com/spalqui/github-user-activity-cli/services/github"
 )
@@ -17,19 +15,14 @@ func main() {
 
 	username := os.Args[1]
 
-	// Create a new HTTP client for GitHub API requests
-	httpClient := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-
 	// Create a new GitHub service instance
-	gitHubService := github.NewService(httpClient)
+	gitHubService := github.NewService()
 
 	// Get user events for a specific GitHub username
-	events, err := gitHubService.GetUserEvents(username)
+	summary, err := gitHubService.GetUserEventsSummary(username)
 	if err != nil {
 		log.Fatalf("Unable to get user activity for %q: %v", username, err)
 	}
 
-	fmt.Printf("%+v\n", events)
+	fmt.Print(summary)
 }

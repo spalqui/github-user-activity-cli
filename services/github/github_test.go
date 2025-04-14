@@ -69,12 +69,9 @@ func TestGetUserEvents(t *testing.T) {
 			mockServer := setupMockServer(tt.mockResponse, tt.mockStatusCode)
 			defer mockServer.Close()
 
-			httpClient := &http.Client{}
+			service := NewService(WithBaseURL(mockServer.URL))
 
-			service := NewService(httpClient)
-			service.baseURL = mockServer.URL
-
-			events, err := service.GetUserEvents(tt.username)
+			events, err := service.getUserEvents(tt.username)
 
 			if (err != nil) && !tt.wantErr {
 				t.Errorf("expected error: %v, got: %v", tt.wantErr, err)
