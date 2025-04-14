@@ -11,9 +11,13 @@ import (
 const (
 	BaseURL = "https://api.github.com"
 
-	CreateEvent      = "CreateEvent"
-	PushEvent        = "PushEvent"
-	PullRequestEvent = "PullRequestEvent"
+	CommitComment     = "CommitCommentEvent"
+	CreateEvent       = "CreateEvent"
+	DeleteEvent       = "DeleteEvent"
+	ForkEvent         = "ForkEvent"
+	IssueCommentEvent = "IssueCommentEvent"
+	PushEvent         = "PushEvent"
+	PullRequestEvent  = "PullRequestEvent"
 )
 
 type Service struct {
@@ -94,8 +98,16 @@ func generateEventsSummary(events []Event) string {
 	for _, event := range events {
 		var e eventTypeSummarizer
 		switch event.Type {
+		case CommitComment:
+			e = commitCommentEvent{event: event}
 		case CreateEvent:
 			e = createEvent{event: event}
+		case DeleteEvent:
+			e = deleteEvent{event: event}
+		case ForkEvent:
+			e = forkEvent{event: event}
+		case IssueCommentEvent:
+			e = issueCommentEvent{event: event}
 		case PushEvent:
 			e = pushEvent{event: event}
 		case PullRequestEvent:
@@ -103,7 +115,7 @@ func generateEventsSummary(events []Event) string {
 		default:
 			e = notImplementedEvent{event: event}
 		}
-		summary.WriteString(fmt.Sprintf("- %s", e.Summarize()))
+		summary.WriteString(fmt.Sprintf("- %s\n", e.Summarize()))
 	}
 	return summary.String()
 }
@@ -113,15 +125,15 @@ type notImplementedEvent struct {
 }
 
 func (e notImplementedEvent) Summarize() string {
-	return fmt.Sprintf("%q is not implemented\n", e.event.Type)
+	return fmt.Sprintf("%q is not implemented", e.event.Type)
 }
 
-type pushEvent struct {
+type commitCommentEvent struct {
 	event Event
 }
 
-func (e pushEvent) Summarize() string {
-	return fmt.Sprintf("Pushed %d commits to %s\n", len(e.event.Payload["commits"].([]interface{})), e.event.Repo.Name)
+func (e commitCommentEvent) Summarize() string {
+	return fmt.Sprintf("Commented on commit in %s", e.event.Repo.Name)
 }
 
 type createEvent struct {
@@ -129,7 +141,39 @@ type createEvent struct {
 }
 
 func (e createEvent) Summarize() string {
-	return fmt.Sprintf("Created %s %s\n", e.event.Payload["ref_type"], e.event.Repo.Name)
+	return fmt.Sprintf("Created %s %s", e.event.Payload["ref_type"], e.event.Repo.Name)
+}
+
+type issueCommentEvent struct {
+	event Event
+}
+
+func (e issueCommentEvent) Summarize() string {
+	return fmt.Sprintf("Comment %s on issue in %s", e.event.Payload["action"], e.event.Repo.Name)
+}
+
+type deleteEvent struct {
+	event Event
+}
+
+func (e deleteEvent) Summarize() string {
+	return fmt.Sprintf("Deleted %s %s from %s", e.event.Payload["ref_type"], e.event.Payload["ref"], e.event.Repo.Name)
+}
+
+type forkEvent struct {
+	event Event
+}
+
+func (e forkEvent) Summarize() string {
+	return fmt.Sprintf("Forked %s to %s", e.event.Payload["forkee"].(map[string]interface{})["full_name"], e.event.Repo.Name)
+}
+
+type pushEvent struct {
+	event Event
+}
+
+func (e pushEvent) Summarize() string {
+	return fmt.Sprintf("Pushed %d commits to %s", len(e.event.Payload["commits"].([]interface{})), e.event.Repo.Name)
 }
 
 type pullRequestEvent struct {
@@ -139,5 +183,5 @@ type pullRequestEvent struct {
 func (e pullRequestEvent) Summarize() string {
 	action := e.event.Payload["action"]
 	action = strings.Join(strings.Split(action.(string), "_"), " ")
-	return fmt.Sprintf("Pull request %s %s\n", e.event.Payload["action"], e.event.Repo.Name)
+	return fmt.Sprintf("Pull request %s %s", action, e.event.Repo.Name)
 }
